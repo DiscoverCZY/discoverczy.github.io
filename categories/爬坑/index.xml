@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Discover&#39;s Blog</title>
-    <link>https://discoverczy.github.io/</link>
-    <description>Recent content on Discover&#39;s Blog</description>
+    <title>爬坑 on Discover&#39;s Blog</title>
+    <link>https://discoverczy.github.io/categories/%E7%88%AC%E5%9D%91/</link>
+    <description>Recent content in 爬坑 on Discover&#39;s Blog</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
     <lastBuildDate>Fri, 06 Mar 2020 00:00:00 +0000</lastBuildDate>
     
-	<atom:link href="https://discoverczy.github.io/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="https://discoverczy.github.io/categories/%E7%88%AC%E5%9D%91/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
