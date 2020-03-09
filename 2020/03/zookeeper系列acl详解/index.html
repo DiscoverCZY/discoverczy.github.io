@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+  <head>
+    
+    <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="generator" content="Hugo 0.65.3 with theme Tranquilpeak 0.4.7-BETA">
+<meta name="author" content="Discover">
+<meta name="keywords" content="zookeeper">
+<meta name="description" content="">
+
+
+<meta property="og:description" content="">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Zookeeper系列：ACL详解">
+<meta name="twitter:title" content="Zookeeper系列：ACL详解">
+<meta property="og:url" content="https://discoverczy.github.io/2020/03/zookeeper%E7%B3%BB%E5%88%97acl%E8%AF%A6%E8%A7%A3/">
+<meta property="twitter:url" content="https://discoverczy.github.io/2020/03/zookeeper%E7%B3%BB%E5%88%97acl%E8%AF%A6%E8%A7%A3/">
+<meta property="og:site_name" content="Discover&#39;s Blog">
+<meta property="og:description" content="">
+<meta name="twitter:description" content="">
+<meta property="og:locale" content="zh-cn">
+
+  
+    <meta property="article:published_time" content="2020-03-08T21:16:04">
+  
+  
+    <meta property="article:modified_time" content="2020-03-08T21:16:04">
+  
+  
+  
+    
+      <meta property="article:section" content="技术">
+    
+      <meta property="article:section" content="中间件">
+    
+  
+  
+    
+      <meta property="article:tag" content="zookeeper">
+    
+  
+
+
+<meta name="twitter:card" content="summary">
+
+
+
+
+
+
+
+  <meta property="og:image" content="//i.loli.net/2020/03/08/5NcszWKAxjgrQdb.jpg">
+  <meta property="twitter:image" content="//i.loli.net/2020/03/08/5NcszWKAxjgrQdb.jpg">
+
+
+
+
+
+  <meta property="og:image" content="https://www.gravatar.com/avatar/1c3114afd5b33ca79913b48e6654e229?s=640">
+  <meta property="twitter:image" content="https://www.gravatar.com/avatar/1c3114afd5b33ca79913b48e6654e229?s=640">
+
+
+    <title>Zookeeper系列：ACL详解</title>
+
+    <link rel="icon" href="https://discoverczy.github.io/favicon.png">
+    
+
+    
+
+    <link rel="canonical" href="https://discoverczy.github.io/2020/03/zookeeper%E7%B3%BB%E5%88%97acl%E8%AF%A6%E8%A7%A3/">
+
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" integrity="sha256-eZrrJcwDc/3uDhsdt61sL2oOBY362qM3lon1gyExkL0=" crossorigin="anonymous" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/fancybox/2.1.4/jquery.fancybox.min.css" integrity="sha256-vuXZ9LGmmwtjqFX1F+EKin1ThZMub58gKULUyf0qECk=" crossorigin="anonymous" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/fancybox/2.1.4/helpers/jquery.fancybox-thumbs.min.css" integrity="sha256-SEa4XYAHihTcEP1f5gARTB2K26Uk8PsndQYHQC1f4jU=" crossorigin="anonymous" />
+    
+    
+    <link rel="stylesheet" href="https://discoverczy.github.io/css/style-twzjdbqhmnnacqs0pwwdzcdbt8yhv8giawvjqjmyfoqnvazl0dalmnhdkvp7.min.css" />
+    
+    
+
+    
+      
+    
+    
+  </head>
+
+  <body>
+    <div id="blog">
+      <header id="header" data-behavior="4">
+  <i id="btn-open-sidebar" class="fa fa-lg fa-bars"></i>
+  <div class="header-title">
+    <a class="header-title-link" href="https://discoverczy.github.io/">Discover&#39;s Blog</a>
+  </div>
+  
+    
+      <a class="header-right-picture "
+         href="https://discoverczy.github.io/#about">
+    
+    
+    
+      
+        <img class="header-picture" src="https://www.gravatar.com/avatar/1c3114afd5b33ca79913b48e6654e229?s=90" alt="作者的图片" />
+      
+    
+    </a>
+  
+</header>
+
+      <nav id="sidebar" data-behavior="4">
+  <div class="sidebar-container">
+    
+      <div class="sidebar-profile">
+        <a href="https://discoverczy.github.io/#about">
+          <img class="sidebar-profile-picture" src="https://www.gravatar.com/avatar/1c3114afd5b33ca79913b48e6654e229?s=110" alt="作者的图片" />
+        </a>
+        <h4 class="sidebar-profile-name">Discover</h4>
+        
+          <h5 class="sidebar-profile-bio">Programming on the fly.</h5>
+        
+      </div>
+    
+    <ul class="sidebar-buttons">
+      
+  <li class="sidebar-button">
+    
+      <a class="sidebar-button-link " href="https://discoverczy.github.io/">
+    
+      <i class="sidebar-button-icon fa fa-lg fa-home"></i>
+      
+      <span class="sidebar-button-desc">首页</span>
+    </a>
+  </li>
+
+  <li class="sidebar-button">
+    
+      <a class="sidebar-button-link " href="https://discoverczy.github.io/categories">
+    
+      <i class="sidebar-button-icon fa fa-lg fa-bookmark"></i>
+      
+      <span class="sidebar-button-desc">分类</span>
+    </a>
+  </li>
+
+  <li class="sidebar-button">
+    
+      <a class="sidebar-button-link " href="https://discoverczy.github.io/tags">
+    
+      <i class="sidebar-button-icon fa fa-lg fa-tags"></i>
+      
+      <span class="sidebar-button-desc">标签</span>
+    </a>
+  </li>
+
+  <li class="sidebar-button">
+    
+      <a class="sidebar-button-link " href="https://discoverczy.github.io/archives">
+    
+      <i class="sidebar-button-icon fa fa-lg fa-archive"></i>
+      
+      <span class="sidebar-button-desc">归档</span>
+    </a>
+  </li>
+
+  <li class="sidebar-button">
+    
+      <a class="sidebar-button-link " href="https://discoverczy.github.io/#about">
+    
+      <i class="sidebar-button-icon fa fa-lg fa-question"></i>
+      
+      <span class="sidebar-button-desc">关于</span>
+    </a>
+  </li>
+
+
+    </ul>
+    <ul class="sidebar-buttons">
+      
+  <li class="sidebar-button">
+    
+      <a class="sidebar-button-link " href="https://github.com/DiscoverCZY" target="_blank" rel="noopener">
+    
+      <i class="sidebar-button-icon fa fa-lg fa-github"></i>
+      
+      <span class="sidebar-button-desc">GitHub</span>
+    </a>
+  </li>
+
+  <li class="sidebar-button">
+    
+      <a class="sidebar-button-link " href="tencent://Message/?Uin=392788684&amp;amp;websiteName=q-zone.qq.com&amp;amp;Menu=yes" target="_blank" rel="noopener">
+    
+      <i class="sidebar-button-icon fa fa-lg fa-qq"></i>
+      
+      <span class="sidebar-button-desc">Tencent</span>
+    </a>
+  </li>
+
+  <li class="sidebar-button">
+    
+      <a class="sidebar-button-link " href="https://stackoverflow.com/users/12993980/discoverczy" target="_blank" rel="noopener">
+    
+      <i class="sidebar-button-icon fa fa-lg fa-stack-overflow"></i>
+      
+      <span class="sidebar-button-desc">Stack Overflow</span>
+    </a>
+  </li>
+
+
+    </ul>
+    <ul class="sidebar-buttons">
+      
+  <li class="sidebar-button">
+    
+      <a class="sidebar-button-link " href="https://discoverczy.github.io/index.xml">
+    
+      <i class="sidebar-button-icon fa fa-lg fa-rss"></i>
+      
+      <span class="sidebar-button-desc">RSS</span>
+    </a>
+  </li>
+
+
+    </ul>
+  </div>
+</nav>
+
+      
+
+      <div id="main" data-behavior="4"
+        class="
+               hasCoverMetaIn
+               ">
+        <article class="post" itemscope itemType="http://schema.org/BlogPosting">
+          
+          
+            <div class="post-header main-content-wrap text-left">
+  
+    <h1 class="post-title" itemprop="headline">
+      Zookeeper系列：ACL详解
+    </h1>
+  
+  
+  <div class="postShorten-meta post-meta">
+    
+      <time itemprop="datePublished" datetime="2020-03-08T21:16:04&#43;08:00">
+        
+  
+  
+  
+  
+    2020-6-8
+  
+
+      </time>
+    
+    
+  
+  
+    <span>发布在</span>
+    
+      <a class="category-link" href="https://discoverczy.github.io/categories/%e6%8a%80%e6%9c%af">技术</a>, 
+    
+      <a class="category-link" href="https://discoverczy.github.io/categories/%e4%b8%ad%e9%97%b4%e4%bb%b6">中间件</a>
+    
+  
+
+  </div>
+
+</div>
+          
+          <div class="post-content markdown" itemprop="articleBody">
+            <div class="main-content-wrap">
+              <p>ACL（访问控制列表），zookeeper通过ACL来控制客户端对ZNode的操作，包含以下五个权限；</p>
+<p>1、ACL类型：</p>
+<ol>
+<li>CREATE：创建子节点的权限</li>
+<li>READ：获取节点数据的权限</li>
+<li>WRITE：更新节点数据的权限</li>
+<li>DELETE：删除子节点的权限</li>
+<li>ADMIN：设置节点ACL的权限</li>
+</ol>
+<p><strong>注意：CREATE和DELETE是针对子节点的权限控制；节点的ACL不会被子节点继承；</strong></p>
+<p>2、ACL格式：</p>
+<p>scheme：表示ACL验证策略，如digest；</p>
+<p>id：表示权限被赋予对象，如某个用户，某个IP；</p>
+<p>permission：表示赋予权限组合，如crwda表示全部权限</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">scheme:id:permisson
+</code></pre></div><p>3、节点ACL操作</p>
+<ol>
+<li>
+<p>查看ACL</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">getAcl <span style="color:#e6db74">${</span>path<span style="color:#e6db74">}</span>
+getAcl /zookeeper
+</code></pre></div></li>
+<li>
+<p>设置ACL</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">setAcl <span style="color:#e6db74">${</span>path<span style="color:#e6db74">}</span> scheme:id:permission
+setAcl /zookeeper world:anyone:cdrwa
+</code></pre></div></li>
+</ol>
+<p>4、节点ACL策略</p>
+<ol>
+<li>
+<p>策略world</p>
+<p>当验证策略为world时，id固定为anyone，表示任何用户；如下设置为任何人对/node节点拥有除读之外的所有权限</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">setAcl /node world:anyone:cdwa
+</code></pre></div></li>
+<li>
+<p>策略auth</p>
+<p>当验证策略为auth（简化操作的digest验证策略）时，它不需要指定id值，会从当前session中获取已通过认证的所有用户（会话认证：addauth digest ${username}:${password}）做为设置acl时的id值；如果当前会话没有已通过认真的用户，使用auth策略是无法成功的；</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">setAcl /node auth:crdwa
+</code></pre></div></li>
+<li>
+<p>策略digest</p>
+<p>当验证策略为digest，它对应的id值为${username}:BASE64(SHA1(${username}:${password}))，表示指定session中通过认证的某个用户及密码才有权限访问；</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">setAcl /node digest:<span style="color:#e6db74">${</span>username<span style="color:#e6db74">}</span>:<span style="color:#e6db74">${</span>encoded_password<span style="color:#e6db74">}</span>:cdwa
+</code></pre></div><p>SHA1及BASE64处理的字符串可通过以下API获得</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">DigestAuthenticationProvider<span style="color:#f92672">.</span><span style="color:#a6e22e">generateDigest</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;username:password&#34;</span><span style="color:#f92672">);</span>
+</code></pre></div></li>
+<li>
+<p>策略IP</p>
+<p>当验证策略为IP，它对应的id值为一个IP地址，表示session的IP地址为某个固定的值才有权限访问；</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">setAcl /node ip:0.0.0.0:cdarw
+</code></pre></div></li>
+<li>
+<p>Super用户</p>
+<p>通过在zookeeper启动参数中增加以下参数，可以实现该；Super用户可以访问任务节点的目的；</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">Dzookeeper.DigestAuthenticationProvider.superDigest<span style="color:#f92672">=</span><span style="color:#e6db74">${</span>username<span style="color:#e6db74">}</span>:BASE64<span style="color:#f92672">(</span>SHA1<span style="color:#f92672">(</span><span style="color:#e6db74">${</span>username<span style="color:#e6db74">}</span>:<span style="color:#e6db74">${</span>password<span style="color:#e6db74">}</span><span style="color:#f92672">))</span>
+</code></pre></div></li>
+</ol>
+<p>我们可以通过ACL的设置来实现敏感节点的限定访问，租户数据的隔离等业务功能</p>
+              
+            </div>
+          </div>
+          <div id="post-footer" class="post-footer main-content-wrap">
+            
+              
+                
+                
+                  <div class="post-footer-tags">
+                    <span class="text-color-light text-small">标签</span><br/>
+                    
+  <a class="tag tag--primary tag--small" href="https://discoverczy.github.io/tags/zookeeper/">zookeeper</a>
+
+                  </div>
+                
+              
+            
+            <div class="post-actions-wrap">
+  
+      <nav >
+        <ul class="post-actions post-action-nav">
+          
+            <li class="post-action">
+              
+                <a class="post-action-btn btn btn--disabled">
+              
+                  <i class="fa fa-angle-left"></i>
+                  <span class="hide-xs hide-sm text-small icon-ml">下一篇</span>
+                </a>
+            </li>
+            <li class="post-action">
+              
+                <a class="post-action-btn btn btn--default tooltip--top" href="https://discoverczy.github.io/2020/03/files.list%E5%BC%95%E8%B5%B7%E7%9A%84%E6%9C%8D%E5%8A%A1%E5%B4%A9%E6%BA%83/" data-tooltip="Files.list引起的服务崩溃">
+              
+                  <span class="hide-xs hide-sm text-small icon-mr">上一篇</span>
+                  <i class="fa fa-angle-right"></i>
+                </a>
+            </li>
+          
+        </ul>
+      </nav>
+    <ul class="post-actions post-action-share" >
+      
+        <li class="post-action hide-lg hide-md hide-sm">
+          <a class="post-action-btn btn btn--default btn-open-shareoptions" href="#btn-open-shareoptions">
+            <i class="fa fa-share-alt"></i>
+          </a>
+        </li>
+        
+          <li class="post-action hide-xs">
+            <a class="post-action-btn btn btn--default" target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://discoverczy.github.io/2020/03/zookeeper%E7%B3%BB%E5%88%97acl%E8%AF%A6%E8%A7%A3/">
+              <i class="fa fa-facebook"></i>
+            </a>
+          </li>
+        
+          <li class="post-action hide-xs">
+            <a class="post-action-btn btn btn--default" target="new" href="https://sns.qzone.qq.com/cgi-bin/qzshare/cgi_qzshare_onekey?url=https://discoverczy.github.io/2020/03/zookeeper%E7%B3%BB%E5%88%97acl%E8%AF%A6%E8%A7%A3/">
+              <i class="fa fa-tencent-weibo"></i>
+            </a>
+          </li>
+        
+          <li class="post-action hide-xs">
+            <a class="post-action-btn btn btn--default" target="new" href="http://service.weibo.com/share/share.php?url=https://discoverczy.github.io/2020/03/zookeeper%E7%B3%BB%E5%88%97acl%E8%AF%A6%E8%A7%A3/">
+              <i class="fa fa-weibo"></i>
+            </a>
+          </li>
+        
+      
+      
+      <li class="post-action">
+        
+          <a class="post-action-btn btn btn--default" href="#">
+        
+          <i class="fa fa-list"></i>
+        </a>
+      </li>
+    </ul>
+  
+</div>
+
+            
+              
+            
+          </div>
+        </article>
+        <footer id="footer" class="main-content-wrap">
+  <span class="copyrights">
+    &copy; 2020 <a href="https://github.com/DiscoverCZY">Discover</a>. All Rights Reserved
+  </span>
+</footer>
+
+      </div>
+      <div id="bottom-bar" class="post-bottom-bar" data-behavior="4">
+        <div class="post-actions-wrap">
+  
+      <nav >
+        <ul class="post-actions post-action-nav">
+          
+            <li class="post-action">
+              
+                <a class="post-action-btn btn btn--disabled">
+              
+                  <i class="fa fa-angle-left"></i>
+                  <span class="hide-xs hide-sm text-small icon-ml">下一篇</span>
+                </a>
+            </li>
+            <li class="post-action">
+              
+                <a class="post-action-btn btn btn--default tooltip--top" href="https://discoverczy.github.io/2020/03/files.list%E5%BC%95%E8%B5%B7%E7%9A%84%E6%9C%8D%E5%8A%A1%E5%B4%A9%E6%BA%83/" data-tooltip="Files.list引起的服务崩溃">
+              
+                  <span class="hide-xs hide-sm text-small icon-mr">上一篇</span>
+                  <i class="fa fa-angle-right"></i>
+                </a>
+            </li>
+          
+        </ul>
+      </nav>
+    <ul class="post-actions post-action-share" >
+      
+        <li class="post-action hide-lg hide-md hide-sm">
+          <a class="post-action-btn btn btn--default btn-open-shareoptions" href="#btn-open-shareoptions">
+            <i class="fa fa-share-alt"></i>
+          </a>
+        </li>
+        
+          <li class="post-action hide-xs">
+            <a class="post-action-btn btn btn--default" target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://discoverczy.github.io/2020/03/zookeeper%E7%B3%BB%E5%88%97acl%E8%AF%A6%E8%A7%A3/">
+              <i class="fa fa-facebook"></i>
+            </a>
+          </li>
+        
+          <li class="post-action hide-xs">
+            <a class="post-action-btn btn btn--default" target="new" href="https://sns.qzone.qq.com/cgi-bin/qzshare/cgi_qzshare_onekey?url=https://discoverczy.github.io/2020/03/zookeeper%E7%B3%BB%E5%88%97acl%E8%AF%A6%E8%A7%A3/">
+              <i class="fa fa-tencent-weibo"></i>
+            </a>
+          </li>
+        
+          <li class="post-action hide-xs">
+            <a class="post-action-btn btn btn--default" target="new" href="http://service.weibo.com/share/share.php?url=https://discoverczy.github.io/2020/03/zookeeper%E7%B3%BB%E5%88%97acl%E8%AF%A6%E8%A7%A3/">
+              <i class="fa fa-weibo"></i>
+            </a>
+          </li>
+        
+      
+      
+      <li class="post-action">
+        
+          <a class="post-action-btn btn btn--default" href="#">
+        
+          <i class="fa fa-list"></i>
+        </a>
+      </li>
+    </ul>
+  
+</div>
+
+      </div>
+      <div id="share-options-bar" class="share-options-bar" data-behavior="4">
+  <i id="btn-close-shareoptions" class="fa fa-close"></i>
+  <ul class="share-options">
+    
+      <li class="share-option">
+        <a class="share-option-btn" target="new" href="https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Fdiscoverczy.github.io%2F2020%2F03%2Fzookeeper%25E7%25B3%25BB%25E5%2588%2597acl%25E8%25AF%25A6%25E8%25A7%25A3%2F">
+          <i class="fa fa-facebook"></i><span>分享到 Facebook</span>
+        </a>
+      </li>
+    
+      <li class="share-option">
+        <a class="share-option-btn" target="new" href="https://sns.qzone.qq.com/cgi-bin/qzshare/cgi_qzshare_onekey?url=https%3A%2F%2Fdiscoverczy.github.io%2F2020%2F03%2Fzookeeper%25E7%25B3%25BB%25E5%2588%2597acl%25E8%25AF%25A6%25E8%25A7%25A3%2F">
+          <i class="fa fa-tencent-weibo"></i><span>分享到 Tencent-Weibo</span>
+        </a>
+      </li>
+    
+      <li class="share-option">
+        <a class="share-option-btn" target="new" href="http://service.weibo.com/share/share.php?url=https%3A%2F%2Fdiscoverczy.github.io%2F2020%2F03%2Fzookeeper%25E7%25B3%25BB%25E5%2588%2597acl%25E8%25AF%25A6%25E8%25A7%25A3%2F">
+          <i class="fa fa-weibo"></i><span>分享到 Sina-Weibo</span>
+        </a>
+      </li>
+    
+  </ul>
+</div>
+<div id="share-options-mask" class="share-options-mask"></div>
+    </div>
+    
+    <div id="about">
+  <div id="about-card">
+    <div id="about-btn-close">
+      <i class="fa fa-remove"></i>
+    </div>
+    
+      <img id="about-card-picture" src="https://www.gravatar.com/avatar/1c3114afd5b33ca79913b48e6654e229?s=110" alt="作者的图片" />
+    
+    <h4 id="about-card-name">Discover</h4>
+    
+      <div id="about-card-bio">Programming on the fly.</div>
+    
+    
+      <div id="about-card-job">
+        <i class="fa fa-briefcase"></i>
+        <br/>
+        Java Architect
+      </div>
+    
+    
+      <div id="about-card-location">
+        <i class="fa fa-map-marker"></i>
+        <br/>
+        china
+      </div>
+    
+  </div>
+</div>
+
+    
+
+    
+  
+    
+      <div id="cover" style="background-image:url('https://discoverczy.github.io/images/cover-v1.3.0.jpg');"></div>
+    
+  
+
+
+    
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.4/jquery.min.js" integrity="sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44=" crossorigin="anonymous"></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js" integrity="sha256-/BfiIkHlHoVihZdc6TFuj7MmJ0TWcWsMXkeDFwhi0zw=" crossorigin="anonymous"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/fancybox/2.1.7/js/jquery.fancybox.min.js" integrity="sha256-GEAnjcTqVP+vBp3SSc8bEDQqvWAZMiHyUSIorrWwH50=" crossorigin="anonymous"></script>
+
+
+<script src="https://discoverczy.github.io/js/script-pcw6v3xilnxydl1vddzazdverrnn9ctynvnxgwho987mfyqkuylcb1nlt.min.js"></script>
+
+
+<script lang="javascript">
+window.onload = updateMinWidth;
+window.onresize = updateMinWidth;
+document.getElementById("sidebar").addEventListener("transitionend", updateMinWidth);
+function updateMinWidth() {
+  var sidebar = document.getElementById("sidebar");
+  var main = document.getElementById("main");
+  main.style.minWidth = "";
+  var w1 = getComputedStyle(main).getPropertyValue("min-width");
+  var w2 = getComputedStyle(sidebar).getPropertyValue("width");
+  var w3 = getComputedStyle(sidebar).getPropertyValue("left");
+  main.style.minWidth = `calc(${w1} - ${w2} - ${w3})`;
+}
+</script>
+
+<script>
+$(document).ready(function() {
+  hljs.configure({ classPrefix: '', useBR: false });
+  $('pre.code-highlight > code, pre > code').each(function(i, block) {
+    if (!$(this).hasClass('codeblock')) {
+      $(this).addClass('codeblock');
+    }
+    hljs.highlightBlock(block);
+  });
+});
+</script>
+
+
+  
+    
+  
+
+
+
+
+    
+  </body>
+</html>
+
